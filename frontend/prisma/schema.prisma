@@ -1,0 +1,241 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         String    // "superadmin" | "admin" | "teacher" | "student"
+  permissions  String?   // JSON array of strings
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  student      Student?
+  teacher      Teacher?
+  Notice       Notice[]
+  Admission    Admission[] @relation("ReviewedBy")
+}
+
+model Student {
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  rollNo         String
+  classId        String
+  class          Class        @relation(fields: [classId], references: [id])
+  section        String
+  dob            String
+  gender         String
+  guardianName   String
+  guardianPhone  String
+  address        String
+  photoUrl       String?
+  admissionDate  DateTime     @default(now())
+  status         String       @default("active") // "active" | "inactive"
+  
+  // Relations
+  attendance     Attendance[]
+  Result         Result[]
+  Fee            Fee[]
+}
+
+model Teacher {
+  id           String       @id @default(uuid())
+  userId       String       @unique
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  employeeId   String       @unique
+  subject      String
+  phone        String
+  address      String
+  joiningDate  DateTime     @default(now())
+  status       String       @default("active") // "active" | "inactive"
+  
+  // Relations
+  Class        Class[]
+  Attendance   Attendance[]
+}
+
+model Class {
+  id           String       @id @default(uuid())
+  name         String       // "Class 1" to "Class 10"
+  section      String
+  teacherId    String?
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  academicYear String
+  
+  // Relations
+  Student      Student[]
+  Attendance   Attendance[]
+  Exam         Exam[]
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD
+  status    String   // "present" | "absent" | "late"
+  markedById String
+  markedBy  Teacher  @relation(fields: [markedById], references: [id])
+}
+
+model Exam {
+  id           String   @id @default(uuid())
+  name         String   // e.g., "Midterm Exam", "Final Exam"
+  classId      String
+  class        Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject      String
+  examDate     DateTime
+  totalMarks   Int
+  academicYear String
+  
+  // Relations
+  Result       Result[]
+}
+
+model Result {
+  id            String   @id @default(uuid())
+  examId        String
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marksObtained Float
+  grade         String
+  remarks       String?
+}
+
+model Notice {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  targetRole  String   // "all" | "teacher" | "student"
+  publishedById String
+  publishedBy User     @relation(fields: [publishedById], references: [id])
+  publishedAt DateTime @default(now())
+  isActive    Boolean  @default(true)
+}
+
+model Admission {
+  id             String   @id @default(uuid())
+  applicantName  String
+  dob            String
+  applyingClass  String
+  guardianName   String
+  guardianPhone  String
+  email          String
+  documentsUrl   String?
+  status         String   @default("pending") // "pending" | "approved" | "rejected"
+  appliedAt      DateTime @default(now())
+  reviewedById   String?
+  reviewedBy     User?    @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+}
+
+model Fee {
+  id        String    @id @default(uuid())
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount    Float
+  feeType   String    // "tuition" | "exam" | "admission" | "other"
+  dueDate   DateTime
+  paidDate  DateTime?
+  status    String    @default("unpaid") // "paid" | "unpaid" | "partial"
+}
+
+model SchoolSettings {
+  id              String   @id @default(uuid())
+  
+  // English Fields
+  schoolNameEn      String   @default("Rafiq Raju")
+  schoolSubtitleEn  String   @default("Cadet School")
+  establishedYearEn String   @default("Established 1998")
+  mottoEn           String   @default("Discipline · Knowledge · Honour")
+  descriptionEn     String   @default("Forging tomorrow's leaders through academic brilliance, unbreakable discipline, and the timeless values of honour and service to the nation.")
+  
+  // Bengali Fields
+  schoolNameBn      String   @default("রফিক রাজু")
+  schoolSubtitleBn  String   @default("ক্যাডেট স্কুল")
+  establishedYearBn String   @default("স্থাপিত ১৯৯৮")
+  mottoBn           String   @default("শৃঙ্খলা · জ্ঞান · সম্মান")
+  descriptionBn     String   @default("অটুট শৃঙ্খলা, একাডেমিক শ্রেষ্ঠত্ব এবং দেশপ্রেমের মাধ্যমে আগামী দিনের নেতৃত্ব তৈরি করা।")
+  
+  // Media
+  heroImageUrl      String   @default("/images/hero.jpg")
+  
+  // Statistics (Assuming numbers stay same, labels change)
+  stat1Value      String   @default("1200+")
+  stat1LabelEn    String   @default("Cadets")
+  stat1LabelBn    String   @default("ক্যাডেট")
+  
+  stat2Value      String   @default("98%")
+  stat2LabelEn    String   @default("Pass Rate")
+  stat2LabelBn    String   @default("পাসের হার")
+  
+  stat3Value      String   @default("60+")
+  stat3LabelEn    String   @default("Faculty")
+  stat3LabelBn    String   @default("শিক্ষকমণ্ডলী")
+  
+  stat4Value      String   @default("26")
+  stat4LabelEn    String   @default("Years of Legacy")
+  stat4LabelBn    String   @default("বছরের ঐতিহ্য")
+  
+  // New Fields added for Full Site Customization
+  logoUrl            String?   @default("/images/crest.png")
+  
+  contactAddressEn   String?   @default("Cantonment Road, Dhaka, Bangladesh")
+  contactAddressBn   String?   @default("ক্যান্টনমেন্ট রোড, ঢাকা, বাংলাদেশ")
+  contactPhoneEn     String?   @default("+880 1700 000000")
+  contactPhoneBn     String?   @default("+৮৮০ ১৭০০ ০০০০০০")
+  contactEmail       String?   @default("info@rafiqrajucadet.edu.bd")
+  
+  aboutTitleEn       String?   @default("Who We Are")
+  aboutTitleBn       String?   @default("আমাদের সম্পর্কে")
+  aboutTextEn        String?   @default("Shaping disciplined, knowledgeable and honourable leaders since 1998.")
+  aboutTextBn        String?   @default("১৯৯৮ সাল থেকে শৃঙ্খলাপরায়ণ, জ্ঞানী এবং সম্মানজনক নেতা তৈরি করা হচ্ছে।")
+  aboutImageUrl      String?   @default("/images/campus.jpg")
+  aboutPillars       String?   // JSON stringified array of objects
+  
+  academicsTitleEn   String?   @default("A Curriculum Built for Leaders")
+  academicsTitleBn   String?   @default("নেতৃত্ব তৈরির কারিকুলাম")
+  academicsTextEn    String?   @default("Our comprehensive academic structure bridges national curriculum with military discipline.")
+  academicsTextBn    String?   @default("আমাদের ব্যাপক একাডেমিক কাঠামো জাতীয় শিক্ষাক্রমকে সামরিক শৃঙ্খলার সাথে যুক্ত করে।")
+  academicsPrograms  String?   // JSON stringified array
+  
+  campusTitleEn      String?   @default("Where Character Is Forged Daily")
+  campusTitleBn      String?   @default("যেখানে প্রতিদিন চরিত্র গঠন হয়")
+  campusTextEn       String?   @default("Life at Rafiq Raju Cadet School is a rigorous balance of academics, physical training, and moral development.")
+  campusTextBn       String?   @default("রফিক রাজু ক্যাডেট স্কুলের জীবন একাডেমিক, শারীরিক প্রশিক্ষণ এবং নৈতিক বিকাশের এক কঠোর ভারসাম্য।")
+  campusItems        String?   // JSON stringified array
+  
+  admissionsTitleEn  String?   @default("Take The First Step")
+  admissionsTitleBn  String?   @default("প্রথম পদক্ষেপ নিন")
+  admissionsTextEn   String?   @default("Join a legacy of excellence. We select candidates who demonstrate academic potential, physical fitness, and strong moral character.")
+  admissionsTextBn   String?   @default("উৎকর্ষের ঐতিহ্যে যোগ দিন। আমরা এমন প্রার্থীদের নির্বাচন করি যারা শিক্ষাগত সম্ভাবনা, শারীরিক সুস্থতা এবং দৃঢ় নৈতিক চরিত্র প্রদর্শন করে।")
+  admissionsSteps    String?   // JSON stringified array
+  
+  footerAboutEn      String?   @default("Shaping disciplined, knowledgeable and honourable leaders since 1998.")
+  footerAboutBn      String?   @default("১৯৯৮ সাল থেকে শৃঙ্খলাপরায়ণ, জ্ঞানী এবং সম্মানজনক নেতা তৈরি করা হচ্ছে।")
+
+  campusImage1Url    String?   @default("/images/campus.jpg")
+  campusImage2Url    String?   @default("/images/hero.jpg")
+  campusImage3Url    String?   @default("/images/campus.jpg")
+  admissionImageUrl  String?   @default("/images/hero.jpg")
+
+  examNamesList      String?   // JSON stringified array of strings
+  subjectsList       String?   // JSON stringified array of strings
+
+  updatedAt       DateTime @updatedAt
+}
