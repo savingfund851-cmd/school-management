@@ -16,33 +16,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>("en");
 
   useEffect(() => {
-    // Check google translate cookie instead of local storage
-    const match = document.cookie.match(/(^|;) ?googtrans=([^;]*)(;|$)/);
-    const saved = match ? match[2] : null;
-    if (saved === "/en/bn") {
-      setLanguage("bn");
+    const saved = localStorage.getItem("app_lang") as Language;
+    if (saved === "en" || saved === "bn") {
+      setLanguage(saved);
+      document.documentElement.lang = saved;
     } else {
-      setLanguage("en");
+      document.documentElement.lang = "en";
     }
   }, []);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
-    if (lang === "bn") {
-      document.cookie = "googtrans=/en/bn; path=/";
-      document.cookie = "googtrans=/en/bn; path=/; domain=" + window.location.hostname;
-    } else {
-      document.cookie = "googtrans=/en/en; path=/";
-      document.cookie = "googtrans=/en/en; path=/; domain=" + window.location.hostname;
-    }
-    // Reload to apply google translate script
-    window.location.reload();
+    localStorage.setItem("app_lang", lang);
+    document.documentElement.lang = lang;
   };
 
   const t = (enText: string, bnText: string) => {
-    // Always return English text. Google Translate will auto-translate the DOM
-    // returning bnText would interfere with Google Translate and cause it to translate Bengali to Bengali.
-    return enText;
+    return language === "bn" ? bnText : enText;
   };
 
   return (
