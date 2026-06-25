@@ -86,7 +86,7 @@ export default function ResultSection() {
               >
                 <option value="">{t("-- All Classes --", "-- সকল শ্রেণী --")}</option>
                 {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} - {t("Section", "বিভাগ")} {c.section}</option>
+                  <option key={c.id} value={c.id}>{t(c.name)} - {t("Section", "বিভাগ")} {c.section}</option>
                 ))}
               </select>
             </div>
@@ -99,8 +99,8 @@ export default function ResultSection() {
                 className="w-full bg-navy-light/50 border border-gold/20 focus:border-gold outline-none rounded-sm px-4 py-3 text-cream text-sm transition-all"
               >
                 <option value="">{t("-- All Exams --", "-- সকল পরীক্ষা --")}</option>
-                {filteredExams.map(e => (
-                  <option key={e.id} value={e.id}>{e.name} ({e.subject})</option>
+                {exams.filter(e => !selectedClass || e.classId === selectedClass).map(e => (
+                  <option key={e.id} value={e.id}>{t(e.name)} ({t(e.subject)})</option>
                 ))}
               </select>
             </div>
@@ -133,7 +133,7 @@ export default function ResultSection() {
             <div className="px-6 py-4 border-b border-gold/10 flex items-center gap-2">
               <Trophy className="text-gold" size={20} />
               <h3 className="font-display text-gold-light uppercase tracking-widest text-sm font-bold">
-                {results[0]?.exam?.name} — {results[0]?.exam?.class?.name} {results[0]?.exam?.class?.section}
+                {t(results[0]?.exam?.name)} — {t(results[0]?.exam?.class?.name)} {results[0]?.exam?.class?.section}
               </h3>
             </div>
             <div className="overflow-x-auto">
@@ -156,11 +156,11 @@ export default function ResultSection() {
                       </td>
                       <td className="px-6 py-4 font-mono text-cream/80">{r.student?.rollNo}</td>
                       <td className="px-6 py-4 font-semibold text-cream">{r.student?.name}</td>
-                      <td className="px-6 py-4">{r.exam?.subject}</td>
+                      <td className="px-6 py-4">{r.exam?.subject ? t(r.exam.subject) : ""}</td>
                       <td className="px-6 py-4 font-bold text-cream">{r.marksObtained}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase border ${gradeColor(r.grade)}`}>
-                          {r.grade}
+                          {r.grade ? t(r.grade) : ""}
                         </span>
                       </td>
                     </tr>
